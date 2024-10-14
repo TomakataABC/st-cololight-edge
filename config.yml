@@ -1,0 +1,5 @@
+name: 'Cololight Hexagons'
+packageKey: 'cololight-hexagons'
+permissions:
+  lan: {}
+  discovery: {}

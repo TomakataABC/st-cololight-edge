@@ -1,0 +1,4 @@
+lan:
+  - manufacturer: "Cololight"
+    model: "Hexagon"
+    deviceProfileName: "cololight.hexagon.v1"
