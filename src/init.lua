@@ -80,9 +80,7 @@ local function send_command(addr, command)
   udp:close()
 end
 
-local function discovery_handler(driver, opts, cont)
-  log.info("Starting device discovery")
-
+local function discover(ntwrk_id, driver)
   local udp = socket.udp()
   udp:settimeout(5)
   udp:setoption('broadcast', true)
@@ -111,29 +109,36 @@ local function discovery_handler(driver, opts, cont)
       end
 
       if mac_address then
-        local device_name = "Cololight Hexagon"
+        
+        if not ntwrk_id then
+          local device_name = "Cololight Hexagon"
 
-        log.info("Discovered Cololight with MAC: " .. mac_address)
+          log.info("Discovered Cololight with MAC: " .. mac_address)
 
-        local device_metadata = {
-          type = "LAN",
-          device_network_id = mac_address,
-          label = device_name,
-          profile = "cololight.hexagon.v1",
-          manufacturer = "Cololight",
-          model = "Hexagon",
-          vendor_provided_label = device_name,
-        }
+          local device_metadata = {
+            type = "LAN",
+            device_network_id = mac_address,
+            label = device_name,
+            profile = "cololight.hexagon.v1",
+            manufacturer = "Cololight",
+            model = "Hexagon",
+            vendor_provided_label = device_name,
+          }
 
-        local existing_device = driver:get_device_info(device_metadata.device_network_id)
-        if not existing_device then
-          driver:try_create_device(device_metadata)
+          local existing_device = driver:get_device_info(device_metadata.device_network_id)
+          if not existing_device then
+            driver:try_create_device(device_metadata)
+          end
         end
 
         driver.datastore[mac_address] = {
           ["ip"] = ip,
           ["port"] = port
         }
+
+        log.info("Set device network information")
+
+        return true
       else
         log.error("Unexpected response format")
       end
@@ -142,6 +147,12 @@ local function discovery_handler(driver, opts, cont)
     end
   end
   udp:close()
+end
+
+local function discovery_handler(driver, opts, cont)
+  log.info("Starting device discovery")
+
+  discover(nil, driver)
 end
 
 -- Capability Handlers
@@ -292,8 +303,9 @@ local function refresh_handler(driver, device)
       end
     end
   else
-    --TODO: Try and search for the device on the network, identify via MAC
-    device:offline()
+    if not discover(device.device_network_id, driver) then
+      device:offline()
+    end
   end
 end
 
